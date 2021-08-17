@@ -1,0 +1,393 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="Bandojo Vincent, Labuguen Darrel, and Mangundayao Jeric">
+    <meta name="generator" content="Jekyll v4.1.1">
+    <title>Meter | Air-Quality Monitor</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="../assets/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Gauge -->
+    <script src="https://cdn.amcharts.com/lib/4/core.js"></script>
+    <script src="https://cdn.amcharts.com/lib/4/charts.js"></script>
+    <script src="https://cdn.amcharts.com/lib/4/themes/animated.js"></script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.5.0/dist/chart.min.js"></script>
+    <script src="https://code.highcharts.com/highcharts.js"></script>
+    <script type="text/javascript" src="http://pubnub.github.io/eon/lib/eon.js"></script>
+
+
+    <style>
+      .bd-placeholder-img {
+        font-size: 1.125rem;
+        text-anchor: middle;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+      }
+
+      @media (min-width: 500px){
+      	.badd{
+        	height: 500px;
+    			width: 500px;
+    			background-color: whitesmoke;
+    			color: black;
+    			padding: 20px;
+        }
+      }
+
+      @media (min-width: 768px) {
+        .bd-placeholder-img-lg {
+          font-size: 3.5rem;
+        } 
+        .badd{
+        	height: 350px;
+    			width: 550px;
+    			background-color: whitesmoke;
+    			color: black;
+    			padding: 20px;
+        }
+      }
+
+      #chartdiv {
+      width: 100%;
+      height: 100;
+      margin: auto;
+      }
+      
+    </style>
+    <!-- Custom styles for this template -->
+    <link href="design.css" rel="stylesheet">
+  </head>
+  <body>
+     <header>
+  	<nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
+    <a class="navbar-brand" href="home.html">Air-Quality Monitor</a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav mr-auto">
+        <li class="nav-item">
+          <a class="nav-link" href="home.html">Home</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="account.html">Account</a>
+        </li>
+        <li class="nav-item active">
+          <a class="nav-link" href="meter.html">Meter <span class="sr-only">(current)</span></a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="daily.html">Daily</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="hourly.html">Hourly</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="summary.html">Summary</a>
+        </li>
+      </ul>
+    </div>
+  </nav>
+</header>
+	<br>
+	<center>
+  	<div class="badd" id="chartdiv" >
+  		
+  	</div>
+    <p style="font-size: 30px; margin-top: 5px;">Real Time Gauge</p>
+	</center>
+		
+
+  <!-- Firebase Configuration -->
+
+  <!-- The core Firebase JS SDK is always required and must be listed first -->
+  <script src="https://www.gstatic.com/firebasejs/8.9.1/firebase-app.js"></script>
+
+  <!-- TODO: Add SDKs for Firebase products that you want to use
+       https://firebase.google.com/docs/web/setup#available-libraries -->
+  <script src="https://www.gstatic.com/firebasejs/8.9.1/firebase-database.js"></script>
+
+
+
+<script type="text/javascript">
+
+am4core.ready(function() {
+
+// Themes begin
+am4core.useTheme(am4themes_animated);
+// Themes end
+
+var chartMin = 0.01;
+var chartMax = 500;
+
+
+var data = {
+  score: 1 ,
+  gradingData: [
+    {
+      title: "Good",
+      color: "#54b947", //#54b947
+      lowScore: 0.01,
+      highScore: 50
+    },
+    {
+      title: "Moderate",
+      color: "#fff200", //#b0d136
+      lowScore: 50,
+      highScore: 100
+    },
+    {
+      title: "Unhealthy ",
+      color: "#f04922", //#fdae19
+      lowScore: 100,
+      highScore: 200
+    },
+    {
+      title: "Very Unhealthy",
+      color: "#ee1f25", //#f04922
+      lowScore: 200,
+      highScore: 300
+    },
+    {
+      title: "Hazardous",
+      color: "#910909", //"#ee1f25"
+      lowScore: 300,
+      highScore: 500    }
+  ]
+};
+
+
+
+/**
+Grading Lookup
+ */
+ function lookUpGrade(lookupScore, grades) {
+  // Only change code below this line
+  for (var i = 0; i < grades.length; i++) {
+    if (
+      grades[i].lowScore < lookupScore &&
+      grades[i].highScore >= lookupScore
+    ) {
+      return grades[i];
+    }
+  }
+  return null;
+}
+
+// create chart
+var chart = am4core.create("chartdiv", am4charts.GaugeChart);
+chart.hiddenState.properties.opacity = 0;
+chart.fontSize = 8;
+chart.innerRadius = am4core.percent(80);
+chart.resizable = false;
+
+/**
+ * Normal axis
+ */
+
+var axis = chart.xAxes.push(new am4charts.ValueAxis());
+axis.min = chartMin;
+axis.max = chartMax;
+axis.strictMinMax = true;
+axis.renderer.radius = am4core.percent(90);
+axis.renderer.inside = true;
+axis.renderer.line.strokeOpacity = 0.1;
+axis.renderer.ticks.template.disabled = false;
+axis.renderer.ticks.template.strokeOpacity = 1;
+axis.renderer.ticks.template.strokeWidth = 0.5;
+axis.renderer.ticks.template.length = 5;
+axis.renderer.grid.template.disabled = true;
+axis.renderer.labels.template.radius = am4core.percent(17);
+axis.renderer.labels.template.fontSize = "0.9em";
+
+/**
+ * Axis for ranges
+ */
+
+var axis2 = chart.xAxes.push(new am4charts.ValueAxis());
+axis2.min = chartMin;
+axis2.max = chartMax;
+axis2.strictMinMax = true;
+axis2.renderer.labels.template.disabled = true;
+axis2.renderer.ticks.template.disabled = true;
+axis2.renderer.grid.template.disabled = false;
+axis2.renderer.grid.template.opacity = 0.5;
+axis2.renderer.labels.template.bent = true;
+axis2.renderer.labels.template.fill = am4core.color("#000");
+axis2.renderer.labels.template.fontWeight = "bold";
+axis2.renderer.labels.template.fillOpacity = 0.3;
+
+
+
+/**
+Ranges
+*/
+
+for (let grading of data.gradingData) {
+  var range = axis2.axisRanges.create();
+  range.axisFill.fill = am4core.color(grading.color);
+  range.axisFill.fillOpacity = 0.8;
+  range.axisFill.zIndex = -1;
+  range.value = grading.lowScore > chartMin ? grading.lowScore : chartMin;
+  range.endValue = grading.highScore < chartMax ? grading.highScore : chartMax;
+  range.grid.strokeOpacity = 0;
+  range.stroke = am4core.color(grading.color).lighten(-0.1);
+  range.label.inside = true;
+  range.label.text = grading.title.toUpperCase();
+  range.label.inside = true;
+  range.label.location = 0.5;
+  range.label.inside = true;
+  range.label.radius = am4core.percent(10);
+  range.label.paddingBottom = -5; // ~half font size
+  range.label.fontSize = "0.9em";
+}
+
+var matchingGrade = lookUpGrade(data.score, data.gradingData);
+
+/**
+ * Label 1
+ */
+
+var label = chart.radarContainer.createChild(am4core.Label);
+label.isMeasured = false;
+label.fontSize = "5em";
+label.x = am4core.percent(50);
+label.paddingBottom = 20;
+label.horizontalCenter = "middle";
+label.verticalCenter = "bottom";
+//label.dataItem = data;
+label.text = data.score.toFixed(1);
+//label.text = "{score}";
+label.fill = am4core.color(matchingGrade.color);
+
+/**
+ * Label 2
+ */
+
+var label2 = chart.radarContainer.createChild(am4core.Label);
+label2.isMeasured = false;
+label2.fontSize = "2em";
+label2.horizontalCenter = "middle";
+label2.verticalCenter = "bottom";
+label2.text = matchingGrade.title.toUpperCase();
+label2.fill = am4core.color(matchingGrade.color);
+
+
+/**
+ * Hand
+ */
+
+var hand = chart.hands.push(new am4charts.ClockHand());
+hand.axis = axis2;
+hand.innerRadius = am4core.percent(55);
+hand.startWidth = 8;
+hand.pin.disabled = true;
+hand.value = data.score;
+hand.fill = am4core.color("#444");
+hand.stroke = am4core.color("#000");
+
+hand.events.on("positionchanged", function(){
+  label.text = axis2.positionToValue(hand.currentPosition).toFixed(1);
+  var value2 = axis.positionToValue(hand.currentPosition);
+  var matchingGrade = lookUpGrade(axis.positionToValue(hand.currentPosition), data.gradingData);
+  label2.text = matchingGrade.title.toUpperCase();
+  label2.fill = am4core.color(matchingGrade.color);
+  label2.stroke = am4core.color(matchingGrade.color);  
+  label.fill = am4core.color(matchingGrade.color);
+})
+
+
+    // Your web app's Firebase configuration
+    // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+    var firebaseConfig = {
+      apiKey: "AIzaSyBvP2Jql9Hfl498PXmZwQLRti_18uccV3o",
+      authDomain: "air-quality-monitoring-s-a21f7.firebaseapp.com",
+      databaseURL: "https://air-quality-monitoring-s-a21f7-default-rtdb.firebaseio.com",
+      projectId: "air-quality-monitoring-s-a21f7",
+      storageBucket: "air-quality-monitoring-s-a21f7.appspot.com",
+      messagingSenderId: "281275418420",
+      appId: "1:281275418420:web:8b53ae1e3e6c6adf73c761",
+      measurementId: "G-P1G45SPZPN"
+    };
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+
+setInterval(function() {
+
+    var fireRef = firebase.database().ref("DustDensity");
+
+    fireRef.on("value", function(snapshot){
+    const data = snapshot.val();
+    const dataArray = Object.values(data);
+    var last_item = dataArray[dataArray.length - 1];
+    // for(i in dataArray){
+    //   console.log(last_item);
+    // }
+
+    var value = parseFloat(last_item);
+    hand.showValue(value, 1000, am4core.ease.cubicOut);
+  })
+}, 1000);
+
+
+}); // end am4core.ready()
+
+var chartT = new Highcharts.Chart({
+  chart:{ renderTo : 'chart-dustContent' },
+  title: { text: "" },
+  series: [{
+    showInLegend: false,
+    data: []
+  }],
+  plotOptions: {
+    line: { animation: true,
+      dataLabels: { enabled: true }
+    },
+    series: { color: '#059e8a' }
+  },
+  xAxis: { type: 'datetime',
+    dateTimeLabelFormats: { second: '%H:%M:%S' }
+  },
+  yAxis: {
+    title: { text: 'Dust Density' }
+    //title: { text: 'PM 2.5 (micrometers) Content' }
+  },
+  credits: { enabled: false }
+});
+
+setInterval(function ( ) {
+  var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+      var x = (new Date()).getTime(),
+          y = parseFloat(this.responseText);
+      //console.log(this.responseText);
+      if(chartT.series[0].data.length > 40) {
+        chartT.series[0].addPoint([x, y], true, true, true);
+      } else {
+        chartT.series[0].addPoint([x, y], true, false, true);
+      }
+    }
+  };
+  xhttp.open("GET", "/temperature", true);
+  xhttp.send();
+
+}, 4000 ) ;
+
+</script>
+
+
+
+	<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
+    <script>window.jQuery || document.write('<script src="../assets/js/vendor/jquery.slim.min.js"><\/script>')</script>
+    <script src="../assets/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>
