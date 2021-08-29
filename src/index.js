@@ -1,14 +1,18 @@
 // Your web app's Firebase configuration
-  var firebaseConfig = {
-    apiKey: "AIzaSyDQfBFrCfPCTqAr30eCr-CH2EzyXt_8Tyg",
-    authDomain: "login-68c28.firebaseapp.com",
-    projectId: "login-68c28",
-    storageBucket: "login-68c28.appspot.com",
-    messagingSenderId: "98884605146",
-    appId: "1:98884605146:web:b2cb0b7a9621878b5781e3"
-  };
-  // Initialize Firebase
-  firebase.initializeApp(firebaseConfig);
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyBvP2Jql9Hfl498PXmZwQLRti_18uccV3o",
+  authDomain: "air-quality-monitoring-s-a21f7.firebaseapp.com",
+  databaseURL: "https://air-quality-monitoring-s-a21f7-default-rtdb.firebaseio.com",
+  projectId: "air-quality-monitoring-s-a21f7",
+  storageBucket: "air-quality-monitoring-s-a21f7.appspot.com",
+  messagingSenderId: "281275418420",
+  appId: "1:281275418420:web:8b53ae1e3e6c6adf73c761",
+  measurementId: "G-P1G45SPZPN"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
 
   firebase.auth.Auth.Persistence.LOCAL;
 
