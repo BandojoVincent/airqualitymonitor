@@ -1,0 +1,83 @@
+ function SelectAllData(){
+    firebase.database().ref('users').once('value',{
+      function(AllRecords){
+        AllRecords.forEach(
+          function(CurrentRecord){
+            var username = CurrentRecord.val().username;
+            var email = CurrentRecord.val().email;
+            var password = CurrentRecord.val().password;
+            AddItemsToTable(username,email,password);
+          }
+        );
+      }
+    });
+  }
+  window.onLoad = SelectAllData;
+
+    var userno = 0;
+      function AddItemsToTable(username,email,password) {
+        var table = document.getElementById('tables');
+        var row = document.createElement('tr');
+        var td1 = document.createElement('td');
+        var td2 = document.createElement('td');
+        var td3 = document.createElement('td');
+        table.innerHTML = ++userno;
+        td1.innerHTML = username;
+        td2.innerHTML = email;
+        td3.innerHTML = password;
+        row.appendChild(td1);
+        row.appendChild(td2);
+        row.appendChild(td3);
+        table.appendChild(row);
+      }
+  <tr>
+            <td id="username">Name: <script></script> <a href="#" style="float:right;">edit</a></td>
+          </tr>
+          <tr>
+            <td id="email">E-mail: <a href="#" style="float:right;">edit</a></td>
+          </tr>
+          <tr>
+            <td id="password">Password: <a href="#" style="float:right;">edit</a></td>
+          </tr>
+          <tr>
+            <td><button id="button_save" style="float: right;">Save</button><br></td>
+          </tr>
+///
+          var database_ref = database.ref()
+      var user = auth.currentUser
+      
+      database_ref.child('userId').get().then(snapshot => {
+        console.log(snapshot)
+      })
+
+////
+ firebase.database().ref('/users/RyRld54XsWUAkDMN6NBToKTDWDK2').once('value').then((snapshot) => {
+          var username = (snapshot.val() && snapshot.val().username);
+          var email = (snapshot.val() && snapshot.val().email);
+          var password = (snapshot.val() && snapshot.val().password);
+          var info = (username+' '+ email+' '+password);
+          console.log(info)
+        });
+
+
+
+
+
+ <script>
+        firebase.auth().onAuthStateChanged(function(user){
+          if (!user) {
+            window.location="index.html";
+          }
+          else{
+            let uid = auth.currentUser.uid
+            var user = auth.currentUser
+            firebase.database().ref('/users/'+user.uid).once('value').then((snapshot) => {
+              var username = (snapshot.val() && snapshot.val().username);
+              var email = (snapshot.val() && snapshot.val().email);
+              var password = (snapshot.val() && snapshot.val().password);
+              var info = (username+' '+ email+' '+password);
+              console.log(info)
+            });
+          }
+        })
+      </script>
